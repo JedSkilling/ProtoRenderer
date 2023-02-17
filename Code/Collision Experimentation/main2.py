@@ -38,15 +38,16 @@ class box:
         self.vel[1] = impulse[1]/self.mass + self.vel[1]
 
     def checkIntersection(self, testLine):
-        xyVals = [self.pos[0], self.pos[0] + self.width, self.pos[1], self.pos[1] + self.height]
-        #colliding = False
-        xVals = xyVals[:2]
-        yVals = xyVals[2:]
-        print(f"yVals: {yVals}")
+
+        #   The top left and top right corners of the box
+        xVals = [self.pos[0], self.pos[0] + self.width]
+        yVals = [self.pos[1], self.pos[1] + self.height]
+
         #   Check rightmost edge for collision
-        #   x = self.pos[0] + width
         collX = False
         collY = False
+
+        #   Setting up variables for calculation
         x = self.pos[0] + self.width
         a = testLine.normal[0]
         b = testLine.normal[1]
@@ -56,51 +57,50 @@ class box:
 
         for x in xVals:
             yIntercept = -(a/b) * (x - x_1) + y_1
-            if((0 < yIntercept - self.pos[1] and yIntercept - self.pos[1] < self.height) and (0 < x - x_1 and x - x_1 < (x_2-x_1))):
+            #   First check is if if the y intercept falls in the y bounds of the collision, second check checks if the initial x values fall in x bounds of collision
+            relativeYPos = yIntercept - self.pos[1]
+            relativeXPos = x - x_1
+            if((0 < relativeYPos and relativeYPos < self.height) and (0 < relativeXPos and relativeXPos < (x_2-x_1))):
                 print("Colliding with x edge")
                 collX = True
         
         for y in yVals:
             xIntercept = -(b/a) * (y - y_1) + x_1
-            if((0 < xIntercept - self.pos[0] and xIntercept - self.pos[0] < self.width) and (0 < y - min(y_1, y_2) and (y - min(y_1, y_2)) < abs(y_2 - y_1))):
+            relativeXPos = xIntercept - self.pos[0]
+            relativeYPos = y - min(y_1, y_2)
+            if((0 < relativeXPos and relativeXPos < self.width) and (0 < relativeYPos and relativeYPos < abs(y_2 - y_1))):
                 print("Colliding with y edge")
                 collY = True
 
 
-        
-
-
         print("Coll check finished")
         if(collX or collY):
-            self.color = np.array((200, 40, 40))
-            self.applyForce(testLine.getForceVector())
+            self.actionOnIntersection(testLine)
         else:
             self.color = np.array((135, 206, 235))
-        #print(x, yIntercept, self.pos[1])
 
-
-        '''
-        collX = False
-        collY = False
-        for i in range(4):
-            checkingVal = xyVals[i]
-            if(i < 2):
-                if(checkingVal > min(testLine.v1[0], testLine.v2[0]) and checkingVal < max(testLine.v1[0], testLine.v2[0])):
-                    newy = (testLine.normal[0]/testLine.normal[1])*(testLine.v1[0] - checkingVal) + testLine.v1[1]
-                    if(newy > self.pos[1] and newy < self.pos[1] + height):
-                        print(checkingVal)
-                        collX = True
-            else:
-                if(checkingVal > min(testLine.v1[1], testLine.v2[1]) and checkingVal < max(testLine.v1[1], testLine.v2[1])):
-                    newx = (testLine.normal[1]/testLine.normal[0])*(testLine.v1[1] - checkingVal) + testLine.v1[0]
-                    if(newx > self.pos[0] and newx < self.pos[0] + width):
-                        print(checkingVal)
-                        collY = True
-        if(collX and collY):
-            self.color = np.array((200, 40, 40))
+    def actionOnIntersection(self, testLine):
+        self.color = np.array((200, 40, 40))
+        
+        if(dot(self.vel, testLine.normal) > 0):
+            currentRestitionVal = (1-testLine.D)
         else:
-            self.color = np.array((135, 206, 235))
-        '''            
+            currentRestitionVal = 1
+
+        self.applyForce(currentRestitionVal * testLine.getForceVector())
+        self.vel -= self.acc * currentRestitionVal
+
+    def getKE(self):
+        KE = 1/2 * self.mass * magnitude(self.vel)**2
+        return KE
+
+
+    def getGPE(self):
+        GPE = self.mass * gravityStrength * (screenHeight - self.pos[1])
+        return GPE
+
+
+
 
 class line:
     def __init__(self, v1, v2, k, D, width = 4 ) -> None: #   v1,v2 are numpy arrays, k is stiffness, D is dampening
@@ -165,7 +165,7 @@ def magnitude(vector):
 #   Variables
 background_color = np.array((30, 20, 40))
 
-
+gravityStrength = 0.01
 
 
 
@@ -182,9 +182,12 @@ pygame.display.set_caption("2D Collision")
 
 clock = pygame.time.Clock()
 
-motionInfo = [np.array((500, 660), float), np.array((2, 0), float),  np.array((0, 0.01), float)]
+allLines = []
+
+motionInfo = [np.array((500, 660), float), np.array((0, 0), float),  np.array((0, 0.01), float)]
 mainBox = box(motionInfo)
-mainLine = line(np.array((700, 700)), np.array((1000, 600)), 1, 0)
+line01 = line(np.array((400, screenHeight)), np.array((1000, screenHeight)), 10, 0.5)
+allLines.append(line01)
 
 t=0
 running = True
@@ -200,24 +203,80 @@ while running:
                 running = False
             if event.key == pygame.K_r:
                 mainBox.pos = np.array(mouse, float)
-                mainBox.vel = np.array((3, 0), float)
-
+                mainBox.vel = np.array((0, 0), float)
 
 
     mainBox.updatePos()
-
-    mainBox.checkIntersection(mainLine)
-
-    mainLine.drawSelf()
-
-    mainBox.drawSelf()
+    
+    for singleLine in allLines:
+        mainBox.checkIntersection(singleLine)
 
     
 
 
 
 
+    for singleLine in allLines:
+        singleLine.drawSelf()
+
+    mainBox.drawSelf()
+
+    # region : Writing Info To Screen
+    smallfont = pygame.font.SysFont('Corbel',15)
+    
+    mouseInfo = f"Mouse Movement: {mouse}"
+    boxPos = f"Pos: {mainBox.pos}"
+    boxVel = f"Vel: {mainBox.vel}"
+    boxAcc = f"Acc: {mainBox.acc}"
+    timeInfo = f"t:{t}"
+    KE = round(mainBox.getKE()) #   These are rounded, avoid doing calculations with them
+    GPE = round(mainBox.getGPE())
+    boxKE = f"Kinetic Energy:{KE}"
+    boxGPE = f"Gravitional Potential:{GPE}"
+    boxTotalEnergy = f"Total Energy:{KE+GPE}"
+
+    
+
+    mouseText = smallfont.render(mouseInfo, True , (255,255,255))
+    camPosText = smallfont.render(boxPos, True, (255, 255, 255))
+    camVelText = smallfont.render(boxVel, True, (255, 255, 255))
+    camAccText = smallfont.render(boxAcc, True, (255, 255, 255))
+
+    boxKEText = smallfont.render(boxKE, True, (255, 255, 255))
+    boxGPEText = smallfont.render(boxGPE, True, (255, 255, 255))
+    boxTotalEnergyText = smallfont.render(boxTotalEnergy, True, (255, 255, 255))
+    timeText = smallfont.render(timeInfo, True , (255,255,255))
+    # endregion
+    
+    #   Game blits
     screen.blit(surface_main, (0, 0))
+
+    
+
+    # region : Info blits
+
+    pygame.draw.rect(screen,(140,140,150),[0,0,180,120])
+    firstColumn = 10
+    screen.blit(mouseText, (firstColumn,10))
+    screen.blit(camPosText, (firstColumn, 25))
+    screen.blit(camVelText, (firstColumn, 40))
+    screen.blit(camAccText, (firstColumn, 55))
+    screen.blit(timeText, (firstColumn, 70))
+
+    pygame.draw.rect(screen,(120,120,125),[180,0,360,60])
+    secondColumn = 190
+    screen.blit(boxKEText, (secondColumn, 10))
+    screen.blit(boxGPEText, (secondColumn, 25))
+    screen.blit(boxTotalEnergyText, (secondColumn, 40))
+
+    
+
+    # endregion
+
+
+
+
+
 
     pygame.display.update()
     clock.tick(30)
