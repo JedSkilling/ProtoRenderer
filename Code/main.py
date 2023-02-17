@@ -11,7 +11,7 @@ from settings import *
 from ui import *
 from renderingShortcuts import *
 
-def getAllLines(camera):
+def getAllLines(camera):    #   Gets all the lines that will need to be drawn for a specific camera
     currDrawList = []
     for singleTriangle in allTriangles:
         newDrawList = singleTriangle.getDrawList(camera, wireframe, light1)
