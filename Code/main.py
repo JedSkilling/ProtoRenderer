@@ -13,7 +13,7 @@ from renderingShortcuts import *
 
 def getAllLines(camera):    #   Gets all the lines that will need to be drawn for a specific camera
     currDrawList = []
-    for singleTriangle in allTriangles:
+    for singleTriangle in allTriangles: #   Loops through every camera in the 3D world
         newDrawList = singleTriangle.getDrawList(camera, wireframe, light1)
         if(not type(newDrawList) == type(None)):
             #print(type(newDrawList))
