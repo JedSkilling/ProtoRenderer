@@ -80,15 +80,30 @@ class box:
             self.color = np.array((135, 206, 235))
 
     def actionOnIntersection(self, testLine):
+        if(instantReactionImpulse):
+            self.calcReactionImpulse(testLine)
+        else:
+            self.gradualForceIntersection(testLine)
+
+
+    def gradualForceIntersection(self, testLine):
         self.color = np.array((200, 40, 40))
-        
         if(dot(self.vel, testLine.normal) > 0):
-            currentRestitionVal = (1-testLine.D)
+            currentRestitionVal = testLine.restitution
         else:
             currentRestitionVal = 1
 
         self.applyForce(currentRestitionVal * testLine.getForceVector())
         self.vel -= self.acc * currentRestitionVal
+
+    def calcReactionImpulse(self, testLine):
+        relVel = getParallelAndPerpendicular(self.vel, testLine.normal)
+        m1 = relVel[1]*self.mass
+        m2 = 0 #    Lines do not _currently_ move or have a mass
+        mAfter = m1 + m2
+        KE1 = 1/2 * self.mass * relVel[1]**2
+        KE2 = 0
+        KEAfter = self.restitution * (KE1 + KE2)
 
     def getKE(self):
         KE = 1/2 * self.mass * magnitude(self.vel)**2
@@ -99,15 +114,19 @@ class box:
         GPE = self.mass * gravityStrength * (screenHeight - self.pos[1])
         return GPE
 
+    def getMomentum(self):
+        momentum = self.mass * magnitude(self.vel)
+        return momentum
+
 
 
 
 class line:
-    def __init__(self, v1, v2, k, D, width = 4 ) -> None: #   v1,v2 are numpy arrays, k is stiffness, D is dampening
+    def __init__(self, v1, v2, stiffness, restitution, width = 4 ) -> None: #   v1,v2 are numpy arrays, restitution is effectively dampening
         self.v1 = v1
         self.v2 = v2
-        self.k = k
-        self.D = D
+        self.stiffness = stiffness
+        self.restitution = restitution
         self.getNormal()
 
         self.color = np.array((80, 50, 150))
@@ -121,11 +140,11 @@ class line:
         pygame.draw.line(surface_main, self.color, self.v1, self.v2, self.width)
 
     def getForceVector(self):
-        vector = 30*self.k*self.normal
+        vector = 30*self.stiffness*self.normal
         return vector
 
 
-def rotateByAngle(vector, angle):
+def rotateByAngle(vector, angle):   #    Clockwise
     # Create the rotation matrix
     rotation_matrix = np.array([
         [np.cos(angle), -np.sin(angle)],
@@ -136,6 +155,14 @@ def rotateByAngle(vector, angle):
     rotated_vector = np.dot(rotation_matrix, vector)
 
     return rotated_vector
+
+def getParallelAndPerpendicular(v, y):
+    sintheta = dot(normalise(v), y)
+    print(sintheta)
+    parallel = round(magnitude(v) * sintheta, 6)
+    perpendicular = round(magnitude(v) * (math.sqrt(1-sintheta**2)), 6)
+    return np.array((parallel, perpendicular))
+
 
 def setup_ui():
     surface_main.fill(background_color)
@@ -166,7 +193,7 @@ def magnitude(vector):
 background_color = np.array((30, 20, 40))
 
 gravityStrength = 0.01
-
+instantReactionImpulse = False
 
 
 pygame.init()
@@ -184,9 +211,9 @@ clock = pygame.time.Clock()
 
 allLines = []
 
-motionInfo = [np.array((500, 660), float), np.array((0, 0), float),  np.array((0, 0.01), float)]
+motionInfo = [np.array((500, 660), float), np.array((2, 0), float),  np.array((0, 0.01), float)]
 mainBox = box(motionInfo)
-line01 = line(np.array((400, screenHeight)), np.array((1000, screenHeight)), 10, 0.5)
+line01 = line(np.array((400, 700)), np.array((1000, 400)), 10, 1)
 allLines.append(line01)
 
 t=0
@@ -203,7 +230,7 @@ while running:
                 running = False
             if event.key == pygame.K_r:
                 mainBox.pos = np.array(mouse, float)
-                mainBox.vel = np.array((0, 0), float)
+                mainBox.vel = np.array((2, 0), float)
 
 
     mainBox.updatePos()

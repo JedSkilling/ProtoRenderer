@@ -1,26 +1,44 @@
+import math
 import numpy as np
-class vector3:
-    def __init__(self, dir) -> None:
-        
-        self.vec = dir
+def rotateByAngle(vector, angle):   #    Clockwise
+    # Create the rotation matrix
+    rotation_matrix = np.array([
+        [np.cos(angle), -np.sin(angle)],
+        [np.sin(angle), np.cos(angle)]
+    ])
 
-    
-    def normalise(self, scale=1):
-        self.vec = scale * (self.vec/self.magnitude())
+    # Rotate the vector
+    rotated_vector = np.dot(rotation_matrix, vector)
 
-    def magnitude(self):
-        return sum(self.vec*self.vec)
+    return rotated_vector
 
-v1 = vector3(np.array((1, 2, 3)))
-print(v1.magnitude())
-v1.normalise()
-print(v1.vec)
+def getParallelAndPerpendicular(v, y):
+    sintheta = dot(normalise(v), y)
+    print(sintheta)
+    parallel = round(magnitude(v) * sintheta, 6)
+    perpendicular = round(magnitude(v) * (math.sqrt(1-sintheta**2)), 6)
+    return np.array((parallel, perpendicular))
+
+def dot(v1, v2):
+    mag = sum(v1*v2)
+    return mag
+def mean3(a, b, c):
+    d = (a+b+c)/3
+    return d
+def normalise(vector, scale=1):
+    if(magnitude(vector) == 0):
+        return vector
+    return scale * (vector/magnitude(vector))
+
+def magnitude(vector):
+    return math.sqrt(sum(vector*vector))
 
 
 
-
-
-
+v1 = np.array((1, 1))
+normal = normalise(np.array((0.1, 1)))
+u1 = getParallelAndPerpendicular(v1, normal)
+print(u1)
 
 
 
