@@ -32,7 +32,7 @@ class box:
         self.vel += self.acc
         self.pos += self.vel
 
-    def applyForce(self, force, time=1/30):
+    def applyImpulse(self, force, time=1/30):
         impulse = force * time
         self.vel[0] = impulse[0]/self.mass + self.vel[0]
         self.vel[1] = impulse[1]/self.mass + self.vel[1]
@@ -81,29 +81,54 @@ class box:
 
     def actionOnIntersection(self, testLine):
         if(instantReactionImpulse):
-            self.calcReactionImpulse(testLine)
+            if(dot(self.vel, testLine.normal) < 0):
+                self.calcReactionImpulse(testLine)
         else:
             self.gradualForceIntersection(testLine)
+        self.gradualForceIntersection(testLine, 0.0001)
 
 
-    def gradualForceIntersection(self, testLine):
+    def gradualForceIntersection(self, testLine, magnitude=1):
         self.color = np.array((200, 40, 40))
         if(dot(self.vel, testLine.normal) > 0):
             currentRestitionVal = testLine.restitution
         else:
             currentRestitionVal = 1
 
-        self.applyForce(currentRestitionVal * testLine.getForceVector())
+        self.applyImpulse(magnitude*currentRestitionVal * testLine.getForceVector())
         self.vel -= self.acc * currentRestitionVal
 
-    def calcReactionImpulse(self, testLine):
-        relVel = getParallelAndPerpendicular(self.vel, testLine.normal)
-        m1 = relVel[1]*self.mass
-        m2 = 0 #    Lines do not _currently_ move or have a mass
-        mAfter = m1 + m2
-        KE1 = 1/2 * self.mass * relVel[1]**2
-        KE2 = 0
-        KEAfter = self.restitution * (KE1 + KE2)
+    def calcReactionImpulse(self, testLine):    #   Assumptions: 1. Testline is stationary, so we are already in its reference frame 2. restitution num is the value for the moving object
+        #   For new reference frame with will change
+        relVel1 = getParallelAndPerpendicular(self.vel, testLine.normal)
+
+        m1 = self.mass
+        m2 = testLine.mass
+        v1 = relVel1[0]
+        restitution = testLine.restitution
+        if(m2 == -1):   #   For case of an object that won't move (ie the equations as mass 2 tends to infinity)
+            u1 = -v1*restitution
+            u2 = 0
+        else:
+            mCombo = (m1/restitution)-m2
+            if(mCombo == 0):
+                u1 = 0
+                u2 = v1*restitution
+            else:
+                u1 = v1 * mCombo *restitution / (m1 + m2)
+                u2 = (v1*restitution) + u1
+
+        #   For new reference frame with will change
+        deltaV1 = u1 - v1
+        deltaV2 = u2
+        impulse1 = deltaV1*m1
+        self.applyImpulse(impulse1*testLine.normal, 1)
+        if(not testLine.mass == -1):
+            impulse2 = deltaV2*m2
+            #testLine.applyImpulse()    Not implemented yet
+            NotImplementedError
+
+
 
     def getKE(self):
         KE = 1/2 * self.mass * magnitude(self.vel)**2
@@ -122,11 +147,12 @@ class box:
 
 
 class line:
-    def __init__(self, v1, v2, stiffness, restitution, width = 4 ) -> None: #   v1,v2 are numpy arrays, restitution is effectively dampening
+    def __init__(self, v1, v2, stiffness, restitution, width = 4, mass = -1) -> None: #   v1,v2 are numpy arrays, restitution is effectively dampening
         self.v1 = v1
         self.v2 = v2
         self.stiffness = stiffness
         self.restitution = restitution
+        self.mass = mass
         self.getNormal()
 
         self.color = np.array((80, 50, 150))
@@ -156,7 +182,7 @@ def rotateByAngle(vector, angle):   #    Clockwise
 
     return rotated_vector
 
-def getParallelAndPerpendicular(v, y):
+def getParallelAndPerpendicular(v, y):  #   Returns two values corresponding to the vector in parallel/perpendicular base coords
     sintheta = dot(normalise(v), y)
     print(sintheta)
     parallel = round(magnitude(v) * sintheta, 6)
@@ -193,7 +219,7 @@ def magnitude(vector):
 background_color = np.array((30, 20, 40))
 
 gravityStrength = 0.01
-instantReactionImpulse = False
+instantReactionImpulse = True
 
 
 pygame.init()
@@ -213,7 +239,7 @@ allLines = []
 
 motionInfo = [np.array((500, 660), float), np.array((2, 0), float),  np.array((0, 0.01), float)]
 mainBox = box(motionInfo)
-line01 = line(np.array((400, 700)), np.array((1000, 400)), 10, 1)
+line01 = line(np.array((400, 700)), np.array((1000, 700)), 10, 0.9)
 allLines.append(line01)
 
 t=0
@@ -230,7 +256,7 @@ while running:
                 running = False
             if event.key == pygame.K_r:
                 mainBox.pos = np.array(mouse, float)
-                mainBox.vel = np.array((2, 0), float)
+                mainBox.vel = np.array((0, 0), float)
 
 
     mainBox.updatePos()
