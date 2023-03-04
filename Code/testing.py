@@ -35,8 +35,8 @@ def magnitude(vector):
 
 
 
-v1 = np.array((1, 1))
-normal = normalise(np.array((0.1, 1)))
+v1 = np.array((1, 1), float)
+normal = normalise(v1)
 u1 = getParallelAndPerpendicular(v1, normal)
 print(u1)
 

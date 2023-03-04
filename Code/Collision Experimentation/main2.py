@@ -2,6 +2,7 @@ import numpy as np
 import pygame
 import time
 import math
+import copy
 
 class box:
     def __init__(self, motionInfo, mass = 50) -> None:
@@ -17,7 +18,7 @@ class box:
         self.height = 30
 
     def drawSelf(self):
-        print(self.pos)
+        #print(self.pos)
         c1 = self.pos[0]
         c2 = self.pos[1]
         c3 = self.width
@@ -25,7 +26,7 @@ class box:
 
 
         rectInfo = [c1, c2, c3, c4]
-        print(rectInfo)
+        #print(rectInfo)
         pygame.draw.rect(surface_main, self.color, rectInfo)
 
     def updatePos(self):
@@ -61,7 +62,7 @@ class box:
             relativeYPos = yIntercept - self.pos[1]
             relativeXPos = x - x_1
             if((0 < relativeYPos and relativeYPos < self.height) and (0 < relativeXPos and relativeXPos < (x_2-x_1))):
-                print("Colliding with x edge")
+                #print("Colliding with x edge")
                 collX = True
         
         for y in yVals:
@@ -69,11 +70,11 @@ class box:
             relativeXPos = xIntercept - self.pos[0]
             relativeYPos = y - min(y_1, y_2)
             if((0 < relativeXPos and relativeXPos < self.width) and (0 < relativeYPos and relativeYPos < abs(y_2 - y_1))):
-                print("Colliding with y edge")
+                #print("Colliding with y edge")
                 collY = True
 
 
-        print("Coll check finished")
+        #print("Coll check finished")
         if(collX or collY):
             self.actionOnIntersection(testLine)
         else:
@@ -99,9 +100,10 @@ class box:
         self.vel -= self.acc * currentRestitionVal
 
     def calcReactionImpulse(self, testLine):    #   Assumptions: 1. Testline is stationary, so we are already in its reference frame 2. restitution num is the value for the moving object
+        #                                           Friction is currently only from the testline, should add the ability to combine co-efficients
         #   For new reference frame with will change
         relVel1 = getParallelAndPerpendicular(self.vel, testLine.normal)
-
+        
         m1 = self.mass
         m2 = testLine.mass
         v1 = relVel1[0]
@@ -123,11 +125,23 @@ class box:
         deltaV2 = u2
         impulse1 = deltaV1*m1
         self.applyImpulse(impulse1*testLine.normal, 1)
+        self.getFriction(impulse1, relVel1[1], testLine.friction, testLine.normal)
         if(not testLine.mass == -1):
             impulse2 = deltaV2*m2
             #testLine.applyImpulse()    Not implemented yet
             NotImplementedError
 
+    def getFriction(self, impulse, unNormalisedDirection, friction, normal):    #   Need to prevent over friction
+        parallelDirection = rotateByAngle(normal, math.pi/2)
+        print(unNormalisedDirection)
+        dir = np.sign(unNormalisedDirection)*parallelDirection
+        frictionImpulse = -dir*impulse*friction
+
+        deltaV = magnitude(frictionImpulse/self.mass)
+        if(not np.sign(unNormalisedDirection - deltaV) == np.sign(unNormalisedDirection)):
+            frictionImpulse = -dir*unNormalisedDirection*self.mass
+            print("Reducing vel to zero")
+        self.applyImpulse(frictionImpulse, 1)
 
 
     def getKE(self):
@@ -147,12 +161,13 @@ class box:
 
 
 class line:
-    def __init__(self, v1, v2, stiffness, restitution, width = 4, mass = -1) -> None: #   v1,v2 are numpy arrays, restitution is effectively dampening
+    def __init__(self, v1, v2, stiffness, restitution, width = 4, mass = -1, friction=0) -> None: #   v1,v2 are numpy arrays, restitution is effectively dampening
         self.v1 = v1
         self.v2 = v2
         self.stiffness = stiffness
         self.restitution = restitution
         self.mass = mass
+        self.friction = friction
         self.getNormal()
 
         self.color = np.array((80, 50, 150))
@@ -160,7 +175,7 @@ class line:
         
     def getNormal(self):
         self.normal = normalise(rotateByAngle(self.v2-self.v1, -math.pi/2))
-        print(self.normal)
+        #print(self.normal)
 
     def drawSelf(self):
         pygame.draw.line(surface_main, self.color, self.v1, self.v2, self.width)
@@ -183,10 +198,13 @@ def rotateByAngle(vector, angle):   #    Clockwise
     return rotated_vector
 
 def getParallelAndPerpendicular(v, y):  #   Returns two values corresponding to the vector in parallel/perpendicular base coords
-    sintheta = dot(normalise(v), y)
-    print(sintheta)
-    parallel = round(magnitude(v) * sintheta, 6)
-    perpendicular = round(magnitude(v) * (math.sqrt(1-sintheta**2)), 6)
+    costheta = dot(normalise(v), y)
+    parallel = round(magnitude(v) * costheta, 6)
+    perpendicularMag = round(magnitude(v) * (math.sqrt(1-costheta**2)), 6)
+    if(dot(v, rotateByAngle(y, math.pi/2)) > 0):
+        perpendicular = perpendicularMag
+    else:
+        perpendicular = -perpendicularMag
     return np.array((parallel, perpendicular))
 
 
@@ -221,6 +239,9 @@ background_color = np.array((30, 20, 40))
 gravityStrength = 0.01
 instantReactionImpulse = True
 
+startVel = np.array((10, 0), float)
+startAcc = np.array((0, 1), float)
+
 
 pygame.init()
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
@@ -237,10 +258,19 @@ clock = pygame.time.Clock()
 
 allLines = []
 
-motionInfo = [np.array((500, 660), float), np.array((2, 0), float),  np.array((0, 0.01), float)]
+motionInfo = [np.array((500, 660), float), startVel.copy(),  startAcc.copy()]
 mainBox = box(motionInfo)
-line01 = line(np.array((400, 700)), np.array((1000, 700)), 10, 0.9)
+
+line01 = line(np.array((400, 700)), np.array((1000, 700)), 10, 0.9, friction=0.1)
 allLines.append(line01)
+'''
+line02 = line(np.array((1000, 700)), np.array((1300, 100)), 10, 0.9)
+allLines.append(line02)
+
+
+line03 = line(np.array((200, 500)), np.array((400, 700)), 10, 0.9)
+allLines.append(line03)
+'''
 
 t=0
 running = True
@@ -256,7 +286,7 @@ while running:
                 running = False
             if event.key == pygame.K_r:
                 mainBox.pos = np.array(mouse, float)
-                mainBox.vel = np.array((0, 0), float)
+                mainBox.vel = startVel.copy()
 
 
     mainBox.updatePos()
@@ -278,9 +308,9 @@ while running:
     smallfont = pygame.font.SysFont('Corbel',15)
     
     mouseInfo = f"Mouse Movement: {mouse}"
-    boxPos = f"Pos: {mainBox.pos}"
-    boxVel = f"Vel: {mainBox.vel}"
-    boxAcc = f"Acc: {mainBox.acc}"
+    boxPos = f"Pos: {np.round(mainBox.pos,1)}"
+    boxVel = f"Vel: {np.round(mainBox.vel,2)}"
+    boxAcc = f"Acc: {np.round(mainBox.acc, 1)}"
     timeInfo = f"t:{t}"
     KE = round(mainBox.getKE()) #   These are rounded, avoid doing calculations with them
     GPE = round(mainBox.getGPE())
