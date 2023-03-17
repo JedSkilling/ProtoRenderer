@@ -23,6 +23,7 @@ mouseSensitivity = 400
 minDistanceFromCamera = 0
 camBackwardsOffset = 0
 
+lighting = False
 
 #   Positional arguments
 init_camera_rotation = np.array((0,0,0), float)

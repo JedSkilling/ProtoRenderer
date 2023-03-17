@@ -2,7 +2,7 @@ import numpy as np
 from classes import *
 
 
-def makeCuboid(cubeLocation, sideLengths, rotation=quatFromRotAndAxis(0, np.array((1, 0, 0))), scale=1):  #   Side lengths has each component
+def makeCuboid(cubeLocation, sideLengths, rotation=quatFromRotAndAxis(0, np.array((1, 0, 0))), scale=1, sideRemoval=[]):  #   Side lengths has each component
     sideLengths *= scale
     #   Cube location in x, y, z
 
@@ -30,43 +30,59 @@ def makeCuboid(cubeLocation, sideLengths, rotation=quatFromRotAndAxis(0, np.arra
 
 
 
-        #   8/8 sides complete
+        #   6/6 sides complete
+    face = 1
+    if(sideRemoval.count(face) == 0):
+        #   Face 1
+        T1 = Triangle(cubeLocation, rotation, np.array((corners[3], corners[1], corners[2])))
+        T2 = Triangle(cubeLocation, rotation, np.array((corners[2], corners[1], corners[0])))
+        tmpTriangleList.append(T1)
+        tmpTriangleList.append(T2)
 
-    #   Face 1
-    T1 = Triangle(cubeLocation, rotation, np.array((corners[3], corners[1], corners[2])))
-    T2 = Triangle(cubeLocation, rotation, np.array((corners[2], corners[1], corners[0])))
-    tmpTriangleList.append(T1)
-    tmpTriangleList.append(T2)
+    face+=1
 
-    #   Face 2
-    T3 = Triangle(cubeLocation, rotation, np.array((corners[7], corners[2], corners[6])))
-    T4 = Triangle(cubeLocation, rotation, np.array((corners[7], corners[3], corners[2])))
-    tmpTriangleList.append(T3)
-    tmpTriangleList.append(T4)
+    if(sideRemoval.count(face) == 0):
+        #   Face 2
+        T3 = Triangle(cubeLocation, rotation, np.array((corners[7], corners[2], corners[6])))
+        T4 = Triangle(cubeLocation, rotation, np.array((corners[7], corners[3], corners[2])))
+        tmpTriangleList.append(T3)
+        tmpTriangleList.append(T4)
 
-    #   Face 3
-    T5 = Triangle(cubeLocation, rotation, np.array((corners[5], corners[6], corners[4])))
-    T6 = Triangle(cubeLocation, rotation, np.array((corners[5], corners[7], corners[6])))
-    tmpTriangleList.append(T5)
-    tmpTriangleList.append(T6)
+    face+=1
 
-    #   Face 4
-    T7 = Triangle(cubeLocation, rotation, np.array((corners[1], corners[4], corners[0])))
-    T8 = Triangle(cubeLocation, rotation, np.array((corners[1], corners[5], corners[4])))
-    tmpTriangleList.append(T7)
-    tmpTriangleList.append(T8)
+    if(sideRemoval.count(face) == 0):
+        #   Face 3
+        T5 = Triangle(cubeLocation, rotation, np.array((corners[5], corners[6], corners[4])))
+        T6 = Triangle(cubeLocation, rotation, np.array((corners[5], corners[7], corners[6])))
+        tmpTriangleList.append(T5)
+        tmpTriangleList.append(T6)
 
-    #   Face 5
-    T9 = Triangle(cubeLocation, rotation, np.array((corners[5], corners[1], corners[3])))
-    T10 = Triangle(cubeLocation, rotation, np.array((corners[5], corners[3], corners[7])))
-    tmpTriangleList.append(T9)
-    tmpTriangleList.append(T10)
+    face+=1
 
-    #   Face 6
-    T11 = Triangle(cubeLocation, rotation, np.array((corners[4], corners[2], corners[0])))
-    T12 = Triangle(cubeLocation, rotation, np.array((corners[4], corners[6], corners[2])))
-    tmpTriangleList.append(T11)
-    tmpTriangleList.append(T12)
+    if(sideRemoval.count(face) == 0):
+        #   Face 4
+        T7 = Triangle(cubeLocation, rotation, np.array((corners[1], corners[4], corners[0])))
+        T8 = Triangle(cubeLocation, rotation, np.array((corners[1], corners[5], corners[4])))
+        tmpTriangleList.append(T7)
+        tmpTriangleList.append(T8)
+
+    face+=1
+
+    if(sideRemoval.count(face) == 0):
+        #   Face 5
+        T9 = Triangle(cubeLocation, rotation, np.array((corners[5], corners[1], corners[3])))
+        T10 = Triangle(cubeLocation, rotation, np.array((corners[5], corners[3], corners[7])))
+        tmpTriangleList.append(T9)
+        tmpTriangleList.append(T10)
+
+    face+=1
+
+    if(sideRemoval.count(face) == 0):
+        #   Face 6
+        T11 = Triangle(cubeLocation, rotation, np.array((corners[4], corners[2], corners[0])))
+        T12 = Triangle(cubeLocation, rotation, np.array((corners[4], corners[6], corners[2])))
+        tmpTriangleList.append(T11)
+        tmpTriangleList.append(T12)
 
     return tmpTriangleList
 
