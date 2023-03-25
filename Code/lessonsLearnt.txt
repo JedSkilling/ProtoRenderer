@@ -1,5 +1,8 @@
--   Triangles were stored in one list that was preserved, in future triangle list should be dynamically generated from cube OBJECTS, need to make proper classes for cubes ect
+-   Triangles were stored in one list that was preserved
+    a   In future triangle list should be dynamically generated from cube OBJECTS, need to make proper classes for cubes ect
+    b   This should allow for moving objects to be kept together
 -   Better way of preventing triangle overlap
 -   Make orientation of system clear and consistent
 -   Clearer division of code in classes, better function splitting
 -   Use inheritance for basic data like position, velocity and collision checks
+    a   Proper physics with collision checking
