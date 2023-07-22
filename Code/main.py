@@ -2,6 +2,7 @@ from ctypes import WinDLL
 import math
 import pygame
 import numpy as np
+import copy
 import time
 
 #   Import everything else
@@ -14,7 +15,10 @@ from renderingShortcuts import *
 def getAllLines(camera):    #   Gets all the lines that will need to be drawn for a specific camera
     currDrawList = []
     for singleTriangle in allTriangles: #   Loops through every camera in the 3D world
-        newDrawList = singleTriangle.getDrawList(camera, wireframe, light1)
+        if(lighting):
+            newDrawList = singleTriangle.getDrawList(camera, wireframe, light1)
+        else:
+            newDrawList = singleTriangle.getDrawList(camera, wireframe)
         if(not type(newDrawList) == type(None)):
             #print(type(newDrawList))
             if(wireframe):
@@ -103,10 +107,10 @@ allTriangles.append(T2)
     #   Blender uses COUNTER CLOCKWISE winding
 
 cubeLocation1 = (0, 0, 10)  #   x,y,z
-allTriangles += makeCuboid(cubeLocation1, (8, 2, 2), quatFromRotAndAxis(math.pi, np.array((0, 1, 0))))
+allTriangles += makeCuboid(cubeLocation1, (8, 2, 2), quatFromRotAndAxis(math.pi, np.array((0, 1, 0))), sideRemoval=[3])
 
 cubeLocation2 = (0, 10, 10)
-allTriangles += makeCuboid(cubeLocation2, (8, 2, 2), quatFromRotAndAxis(math.pi, np.array((0, 1, 0))))
+allTriangles += makeCuboid(cubeLocation2, (8, 2, 2), quatFromRotAndAxis(math.pi, np.array((0, 1, 0))), sideRemoval=[3])
 
 cubeLoc3 = (-10, -2, 8)
 allTriangles += makeCuboid(cubeLoc3, (2, 16, 2), quatFromRotAndAxis(0, np.array((1, 0, 0))))
@@ -134,15 +138,20 @@ rotation = quatFromRotAndAxis(0, np.array((1, 0, 0)))
 T1 = Triangle(triangleLocation, rotation, np.array((tmpVertices[0], tmpVertices[1], tmpVertices[2])))
 allTriangles.append(T1)
 '''
-light1pos = np.array((15, 0, 0))
-light1vel = np.array((-0.1, 0, 0))
-light1acc = np.array((0, 0, 0))
-motionInfo = np.array((light1pos, light1vel, light1acc))
+if(lighting):
+    light1pos = np.array((-15, -4, -4))
+    light1vel = np.array((0, 0, 0))
+    light1acc = np.array((0, 0, 0))
+    motionInfo = np.array((light1pos, light1vel, light1acc))
 
-light1 = lightSource(motionInfo, 150)
+    light1 = lightSource(motionInfo, 150)
 
-cam1xyzRot = np.array((0, 0, 0))
-cam1 = Camera(np.array((0., 0., 0.)), cam1xyzRot, FoV)
+
+cam1 = Camera(copy.deepcopy(init_camera_pos), init_camera_rotation, FoV)
+
+
+
+
 mainLineList = []
 
 mousePrev = np.array(pygame.mouse.get_pos(), float)
@@ -157,6 +166,7 @@ if(focussed):
     
     pygame.mouse.set_visible(False)
     pygame.event.set_grab(True)
+    pygame.mouse.get_rel()
     
 
 running = True
@@ -223,7 +233,8 @@ while running:
     mainLineList = []
 
     cam1.updateMotion()
-    light1.updatePos()
+    if(lighting):
+        light1.updatePos()
 
 
     

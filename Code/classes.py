@@ -36,7 +36,7 @@ class Triangle:
     def getPos(self):
         return self.pos
     
-    def getDrawList(self, Camera, isWireframe, light):
+    def getDrawList(self, Camera, isWireframe, light=None):
         self.drawList = np.zeros((3, 2), Vertex)
         outOfShot = 0
         isFacingCamera = True
@@ -48,13 +48,17 @@ class Triangle:
             #print(f"Normal: {self.normal} Vec from cam to Center: {vectorFromCenterToCam}\nDot product is: {dot(self.normal, vectorFromCenterToCam)}")
             if(dot(self.normal, vectorFromCenterToCam) <= 0):
                 isFacingCamera = False
-            vectorFromCenterToLight = normalise(self.center - light.pos)
-            #print(f"Normal: {self.normal} Vec from cam to Center: {vectorFromCenterToCam}\nDot product is: {dot(self.normal, vectorFromCenterToCam)}")
-            lightingMag = dot(self.normal, vectorFromCenterToLight)
-            if(lightingMag > 0):
-                self.lighting = (light.brightness/100) * lightingMag
+
+            if(lighting):
+                vectorFromCenterToLight = normalise(self.center - light.pos)
+                #print(f"Normal: {self.normal} Vec from cam to Center: {vectorFromCenterToCam}\nDot product is: {dot(self.normal, vectorFromCenterToCam)}")
+                lightingMag = dot(self.normal, vectorFromCenterToLight)
+                if(lightingMag > 0):
+                    self.lighting = (light.brightness/100) * lightingMag
+                else:
+                    self.lighting = 0.119
             else:
-                self.lighting = 0.119
+                self.lighting = 1
             
             
         #print(f"self vertices: {self.vertices}")

@@ -35,11 +35,10 @@ def magnitude(vector):
 
 
 
-v1 = np.array((1, 1), float)
-normal = normalise(v1)
-u1 = getParallelAndPerpendicular(v1, normal)
-print(u1)
-
+sideRemoval=[0, 1, 0, 0]
+print(sideRemoval)
+if(sideRemoval.count(0) > 0):
+    print("Face is True")
 
 
 

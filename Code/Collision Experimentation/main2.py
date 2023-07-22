@@ -233,7 +233,11 @@ def normalise(vector, scale=1):
 def magnitude(vector):
     return math.sqrt(sum(vector*vector))
 
-#def makeLine(startPos, endPos, stiffness, restitution, width, mass, friction)
+def makeLine(startPos, endPos, stiffness=0.3, restitution=0.9, width=4, mass=-1, friction=0.1):
+    tmpStart = np.array((startPos[0], startPos[1]))
+    tmpEnd = np.array((endPos[0], endPos[1]))
+    tmpLine = line(tmpStart, tmpEnd, stiffness, 0.9, width, mass, friction=0.1)
+    allLines.append(tmpLine)
 
 #   Variables
 background_color = np.array((30, 20, 40))
@@ -262,8 +266,8 @@ allLines = []
 
 motionInfo = [np.array((500, 660), float), startVel.copy(),  startAcc.copy()]
 mainBox = box(motionInfo)
-
-line01 = line(np.array((400, 700)), np.array((1000, 700)), 10, 0.9)
+'''
+line01 = line(np.array((400, 700)), np.array((1000, 700)), 10, 0.9, friction=0.1)
 allLines.append(line01)
 
 line02 = line(np.array((1000, 700)), np.array((1300, 100)), 10, 0.9)
@@ -272,7 +276,10 @@ allLines.append(line02)
 
 line03 = line(np.array((200, 500)), np.array((400, 700)), 10, 0.9)
 allLines.append(line03)
-
+'''
+makeLine((400, 700), (1000, 700))
+makeLine((1000, 700), (1500, 500))
+makeLine((200, 500), (400, 700))
 
 t=0
 running = True
